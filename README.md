@@ -5,12 +5,6 @@ A retro-styled music player web application inspired by Winamp, built as a Teleg
 ## 🚀 Live Demo
 - **Telegram Mini App**: [Launch in Telegram](https://t.me/sh_blur_bot)
 
-## 📋 Overview
-
-Blur Player is a fully functional music streaming application that fetches audio files from Yandex S3 cloud storage and presents them through a nostalgic Winamp-inspired interface. The app features smart folder navigation, artist-scoped playback, and mobile-optimized controls.
-
-## 🛠️ Tech Stack
-
 ### Cloud Infrastructure
 - **Yandex Object Storage (S3)** - Audio file hosting and management
 - **S3 XML API** - File listing with pagination support
@@ -47,18 +41,6 @@ bucket-root/
 - **Smart path parsing** to extract artist/album/song hierarchy
 - **Number prefix cleaning** for display while preserving order
 - **Cover art detection** from multiple filename patterns
-
-### Audio Management
-- **Artist-scoped playlists** - songs loop within current artist only
-- **Shuffle mode** - randomization within artist boundaries
-- **Smart navigation** - automatic album progression
-- **Progress seeking** - click-to-seek and drag handle support
-
-### UI/UX Innovations
-- **Smart folder expansion** - auto-collapse previous selections
-- **Single-song album detection** - one-click play for singles
-- **Touch-optimized controls** - 48px+ touch targets
-- **Visual hierarchy** - progressive indentation for folder structure
 
 ### Performance Optimizations
 - **Lazy loading** - files loaded on demand
