@@ -129,6 +129,8 @@ class BlurPlayer {
         this.s3Library = new S3MusicLibrary();
         
         this.initializeElements();
+        this.setupTelegramWebApp();
+        this.setupMediaSession();
         this.bindEvents();
         this.loadMusicLibrary();
     }
@@ -166,6 +168,60 @@ class BlurPlayer {
         this.audio.addEventListener('timeupdate', () => this.updateProgress());
         this.audio.addEventListener('ended', () => this.playNext());
         this.audio.addEventListener('error', (e) => this.handleAudioError(e));
+    }
+    
+    setupTelegramWebApp() {
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            tg.disableVerticalSwipes();
+            
+            // Prevent Telegram from interfering with audio playback
+            tg.enableClosingConfirmation();
+            
+            // Keep app active for background audio
+            tg.onEvent('viewportChanged', () => {
+                if (this.isPlaying && this.audio.paused) {
+                    this.audio.play().catch(console.error);
+                }
+            });
+        }
+    }
+    
+    setupMediaSession() {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.setActionHandler('play', () => {
+                this.play();
+            });
+            
+            navigator.mediaSession.setActionHandler('pause', () => {
+                this.pause();
+            });
+            
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                this.playPrevious();
+            });
+            
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                this.playNext();
+            });
+        }
+    }
+    
+    updateMediaSession() {
+        if ('mediaSession' in navigator && this.currentTrack) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: this.currentTrack.title,
+                artist: this.currentTrack.artist,
+                album: this.currentTrack.album,
+                artwork: this.currentTrack.cover ? [
+                    { src: this.currentTrack.cover, sizes: '512x512', type: 'image/jpeg' }
+                ] : []
+            });
+            
+            navigator.mediaSession.playbackState = this.isPlaying ? 'playing' : 'paused';
+        }
     }
     
     bindEvents() {
@@ -464,6 +520,7 @@ class BlurPlayer {
         this.currentTime = 0;
         this.updateTimeDisplay();
         this.updateProgress();
+        this.updateMediaSession();
     }
 
     handleAudioError(e) {
@@ -485,6 +542,7 @@ class BlurPlayer {
                 this.isPlaying = true;
                 this.playPauseBtn.querySelector('.play-icon').style.display = 'none';
                 this.playPauseBtn.querySelector('.pause-icon').style.display = 'block';
+                this.updateMediaSession();
             }).catch(error => {
                 console.error('Play error:', error);
             });
@@ -496,6 +554,7 @@ class BlurPlayer {
         this.isPlaying = false;
         this.playPauseBtn.querySelector('.play-icon').style.display = 'block';
         this.playPauseBtn.querySelector('.pause-icon').style.display = 'none';
+        this.updateMediaSession();
     }
     
     updateCurrentArtistPlaylist(artistName) {
