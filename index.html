@@ -3,16 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Winamp Player</title>
+    <title>Blur Player</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="winamp-container">
+    <div class="loading-screen" id="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading music library...</div>
+    </div>
+
+    <div class="winamp-container" id="winamp-container" style="display: none;">
         <!-- Main Player Section -->
         <div class="player-section">
             <div class="player-header">
                 <div class="title-bar">
-                    <span class="title">WINAMP</span>
+                    <span class="title">BLUR PLAYER</span>
                     <div class="window-controls">
                         <button class="control-btn minimize">-</button>
                         <button class="control-btn maximize">□</button>
@@ -25,18 +30,19 @@
                 <!-- Display Section -->
                 <div class="display-section">
                     <div class="track-info">
-                        <div class="song-title">Track 3</div>
+                        <div class="song-title">Select a song...</div>
                         <div class="album-name">Album Name</div>
                         <div class="artist-name">Artist Name</div>
                         <div class="time-info">
                             <span class="current-time">00:00</span>
                             <span class="separator">/</span>
-                            <span class="total-time">5:04</span>
+                            <span class="total-time">0:00</span>
                         </div>
                     </div>
                     <div class="album-cover-section">
                         <div class="album-cover-large">
                             <div class="cover-placeholder">🎵</div>
+                            <img class="album-cover-img" style="display: none;">
                         </div>
                     </div>
                 </div>
@@ -88,7 +94,7 @@
         <div class="playlist-section">
             <div class="playlist-header">
                 <div class="title-bar">
-                    <span class="title">WINAMP PLAYLIST</span>
+                    <span class="title">MUSIC LIBRARY</span>
                     <div class="window-controls">
                         <button class="control-btn minimize">-</button>
                         <button class="control-btn maximize">□</button>
@@ -98,64 +104,51 @@
             </div>
             
             <div class="playlist-main">
-                <div class="folder-tree">
-                    <div class="artist-folder" data-artist="Marz">
-                        <div class="folder-header artist-header">
-                            <span class="folder-icon">📁</span>
-                            <span class="folder-name">Marz</span>
-                        </div>
-                        <div class="album-list" style="display: none;">
-                            <div class="album-folder" data-album="Bleach">
-                                <div class="album-header">
-                                    <span class="folder-icon">📁</span>
-                                    <span class="album-name">Bleach</span>
-                                    <div class="album-cover-placeholder">🎵</div>
-                                </div>
-                                <div class="song-list" style="display: none;">
-                                    <div class="song-item" data-id="100">100. Marz - Bleach <span class="duration">1:14</span></div>
-                                    <div class="song-item" data-id="101">101. Marz - Side <span class="duration">4:34</span></div>
-                                    <div class="song-item" data-id="102">102. Marz - Third Eye <span class="duration">4:34</span></div>
-                                    <div class="song-item" data-id="103">103. Marz - Steal My Shine <span class="duration">4:40</span></div>
-                                    <div class="song-item" data-id="104">104. Marz - Step Aside <span class="duration">4:56</span></div>
-                                    <div class="song-item" data-id="105">105. Marz - Third Eye <span class="duration">4:10</span></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="artist-folder" data-artist="Ghost Machine">
-                        <div class="folder-header artist-header">
-                            <span class="folder-icon">📁</span>
-                            <span class="folder-name">Ghost Machine</span>
-                        </div>
-                        <div class="album-list" style="display: none;">
-                            <div class="album-folder" data-album="Various Tracks">
-                                <div class="album-header">
-                                    <span class="folder-icon">📁</span>
-                                    <span class="album-name">Various Tracks</span>
-                                    <div class="album-cover-placeholder">🎵</div>
-                                </div>
-                                <div class="song-list" style="display: none;">
-                                    <div class="song-item" data-id="109">109. Ghost Machine - Intro <span class="duration">1:06</span></div>
-                                    <div class="song-item" data-id="110">110. Ghost Machine - Headstone <span class="duration">4:14</span></div>
-                                    <div class="song-item" data-id="111">111. Ghost Machine - Vegas Moon <span class="duration">3:55</span></div>
-                                    <div class="song-item" data-id="112">112. Ghost Machine - God Forbid <span class="duration">3:27</span></div>
-                                    <div class="song-item" data-id="113">113. Ghost Machine - Scarred By Happiness (L.S.D.) <span class="duration">5:19</span></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="folder-tree" id="folder-tree">
+                    <!-- Dynamic content will be populated here -->
                 </div>
                 
                 <!-- Playlist Controls -->
                 <div class="playlist-controls">
-                    <button class="playlist-btn">ADD</button>
-                    <button class="playlist-btn">REM</button>
+                    <button class="playlist-btn" id="refresh-btn">REFRESH</button>
                     <button class="playlist-btn">SEL</button>
                     <button class="playlist-btn">MISC</button>
-                    <div class="playlist-info">
-                        <span class="playlist-time">6:05/9:14:47</span>
-                        <span class="playlist-count">4 of 22</span>
+                    <div class="playlist-info" id="playlist-info">
+                        <span class="playlist-time">0:00/0:00</span>
+                        <span class="playlist-count">0 of 0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Popup Modal -->
+    <div class="info-popup" id="info-popup" style="display: none;">
+        <div class="popup-overlay" id="popup-overlay"></div>
+        <div class="popup-content">
+            <div class="popup-header">
+                <h2>About Blur Player</h2>
+                <button class="popup-close" id="popup-close">×</button>
+            </div>
+            <div class="popup-body">
+                <p>Удобный музыкальный плеер внутри Telegram, с эффективным хранением аудио на Yandex Cloud S3. Минимальные затраты — максимум контента. Запускается везде, где есть Telegram</p>
+
+                
+                <div class="contact-section">
+                    <h3>Мои контакты:</h3>
+                    <div class="contact-buttons">
+                        <button class="contact-btn website-btn" id="website-btn">
+                            <span class="btn-icon">🌐</span>
+                            sh-development.ru
+                        </button>
+                        <button class="contact-btn telegram-btn" id="telegram-btn">
+                            <span class="btn-icon">💬</span>
+                            Telegram @sergey_showmelove
+                        </button>
+                        <button class="contact-btn email-btn" id="email-btn">
+                            <span class="btn-icon">📧</span>
+                            wumilovsergey@gmail.com
+                        </button>
                     </div>
                 </div>
             </div>

@@ -154,6 +154,12 @@ class BlurPlayer {
         this.playlistInfo = document.getElementById('playlist-info');
         this.loadingScreen = document.getElementById('loading-screen');
         this.winampContainer = document.getElementById('winamp-container');
+        this.infoPopup = document.getElementById('info-popup');
+        this.popupOverlay = document.getElementById('popup-overlay');
+        this.popupClose = document.getElementById('popup-close');
+        this.websiteBtn = document.getElementById('website-btn');
+        this.telegramBtn = document.getElementById('telegram-btn');
+        this.emailBtn = document.getElementById('email-btn');
         
         this.audio = new Audio();
         this.audio.addEventListener('loadedmetadata', () => this.updateDuration());
@@ -169,6 +175,13 @@ class BlurPlayer {
         this.shuffleBtn.addEventListener('click', () => this.toggleShuffle());
         this.infoBtn.addEventListener('click', () => this.showInfo());
         this.refreshBtn.addEventListener('click', () => this.refreshLibrary());
+        
+        // Popup event listeners
+        this.popupClose.addEventListener('click', () => this.hideInfoPopup());
+        this.popupOverlay.addEventListener('click', () => this.hideInfoPopup());
+        this.websiteBtn.addEventListener('click', () => this.openWebsite());
+        this.telegramBtn.addEventListener('click', () => this.openTelegram());
+        this.emailBtn.addEventListener('click', () => this.copyEmail());
         
         this.progressBar.addEventListener('click', (e) => this.seekTo(e));
         this.progressBar.addEventListener('touchstart', (e) => this.seekTo(e));
@@ -271,7 +284,6 @@ class BlurPlayer {
         albumHeader.innerHTML = `
             <span class="folder-icon">📁</span>
             <span class="album-name">${albumName}</span>
-            <div class="album-cover-placeholder">🎵</div>
         `;
 
         const songList = document.createElement('div');
@@ -284,7 +296,6 @@ class BlurPlayer {
             songItem.setAttribute('data-id', track.id);
             songItem.innerHTML = `
                 <span>${track.title}</span>
-                <span class="duration">${track.duration}</span>
             `;
             songList.appendChild(songItem);
         });
@@ -370,6 +381,24 @@ class BlurPlayer {
         const albumName = albumFolder.getAttribute('data-album');
         const songList = albumFolder.querySelector('.song-list');
         const artistFolder = albumFolder.closest('.artist-folder');
+        const artistName = artistFolder.getAttribute('data-artist');
+        
+        // Check if this is a single-song album
+        const songsInAlbum = songList.querySelectorAll('.song-item');
+        if (songsInAlbum.length === 1) {
+            // Auto-play the single song
+            const songItem = songsInAlbum[0];
+            const songId = parseInt(songItem.getAttribute('data-id'));
+            const trackIndex = this.playlist.findIndex(track => track.id === songId);
+            
+            if (trackIndex !== -1) {
+                this.currentIndex = trackIndex;
+                const selectedTrack = this.playlist[trackIndex];
+                this.loadTrack(selectedTrack);
+                this.play();
+            }
+            return;
+        }
         
         // Close previous album in same artist
         if (this.currentOpenAlbum && this.currentOpenAlbum !== albumName) {
@@ -382,7 +411,7 @@ class BlurPlayer {
             }
         }
         
-        // Toggle current album
+        // Toggle current album (only for multi-song albums)
         if (songList.style.display === 'none' || songList.style.display === '') {
             songList.style.display = 'block';
             albumHeader.classList.add('expanded');
@@ -530,8 +559,46 @@ class BlurPlayer {
     }
     
     showInfo() {
-        if (this.currentTrack) {
-            alert(`Now Playing:\n${this.currentTrack.title}\nBy: ${this.currentTrack.artist}\nAlbum: ${this.currentTrack.album}`);
+        this.infoPopup.style.display = 'flex';
+    }
+    
+    hideInfoPopup() {
+        this.infoPopup.style.display = 'none';
+    }
+    
+    openWebsite() {
+        window.open('https://your-website.com', '_blank');
+    }
+    
+    openTelegram() {
+        window.open('https://sh-development.ru', '_blank');
+    }
+    
+    async copyEmail() {
+        const email = 'wumilovsergey@gmail.com';
+        try {
+            await navigator.clipboard.writeText(email);
+            // Visual feedback
+            const originalText = this.emailBtn.innerHTML;
+            this.emailBtn.innerHTML = '<span class="btn-icon">✅</span>Email Copied!';
+            setTimeout(() => {
+                this.emailBtn.innerHTML = originalText;
+            }, 2000);
+        } catch (err) {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = email;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            // Visual feedback
+            const originalText = this.emailBtn.innerHTML;
+            this.emailBtn.innerHTML = '<span class="btn-icon">✅</span>Email Copied!';
+            setTimeout(() => {
+                this.emailBtn.innerHTML = originalText;
+            }, 2000);
         }
     }
     
