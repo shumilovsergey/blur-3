@@ -206,6 +206,11 @@ class BlurPlayer {
             navigator.mediaSession.setActionHandler('nexttrack', () => {
                 this.playNext();
             });
+            
+            // Disable seek actions to force track navigation buttons
+            navigator.mediaSession.setActionHandler('seekbackward', null);
+            navigator.mediaSession.setActionHandler('seekforward', null);
+            navigator.mediaSession.setActionHandler('seekto', null);
         }
     }
     
@@ -221,6 +226,16 @@ class BlurPlayer {
             });
             
             navigator.mediaSession.playbackState = this.isPlaying ? 'playing' : 'paused';
+            
+            // Ensure only track navigation actions are available
+            try {
+                navigator.mediaSession.setActionHandler('seekbackward', null);
+                navigator.mediaSession.setActionHandler('seekforward', null);
+                navigator.mediaSession.setActionHandler('seekto', null);
+            } catch (error) {
+                // Some browsers may not support removing these actions
+                console.log('Could not disable seek actions:', error);
+            }
         }
     }
     
