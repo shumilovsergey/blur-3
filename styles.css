@@ -377,13 +377,13 @@ body {
     min-height: 48px;
 }
 
-.folder-header:hover {
+/* .folder-header:hover {
     background: #333;
-}
+} */
 
-.folder-header:active {
+/* .folder-header:active {
     background: #444;
-}
+} */
 
 .folder-icon {
     font-size: 18px;
@@ -431,13 +431,13 @@ body {
     font-size: 16px;
 }
 
-.album-header:hover {
+/* .album-header:hover {
     background: linear-gradient(to bottom, #003300, #002200);
-}
+} */
 
-.album-header:active {
+/* .album-header:active {
     background: linear-gradient(to bottom, #001100, #003300);
-}
+} */
 
 .album-header.expanded {
     background: linear-gradient(to bottom, #004400, #003300);
@@ -477,13 +477,13 @@ body {
     border: 1px solid #002200;
 }
 
-.song-item:hover {
+/* .song-item:hover {
     background: linear-gradient(to bottom, #002200, #001100);
-}
+} */
 
-.song-item:active {
+/* .song-item:active {
     background: linear-gradient(to bottom, #000800, #002200);
-}
+} */
 
 .song-item.playing {
     background: linear-gradient(to bottom, #006600, #004400);
