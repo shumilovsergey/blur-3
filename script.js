@@ -178,6 +178,9 @@ class BlurPlayer {
             tg.expand();
             tg.disableVerticalSwipes();
             
+            // Explicitly disable closing confirmation
+            tg.disableClosingConfirmation();
+            
             // Keep app active for background audio
             tg.onEvent('viewportChanged', () => {
                 if (this.isPlaying && this.audio.paused) {
@@ -185,6 +188,13 @@ class BlurPlayer {
                 }
             });
         }
+        
+        // Prevent browser beforeunload popup
+        window.onbeforeunload = null;
+        window.addEventListener('beforeunload', (e) => {
+            // Don't show any confirmation dialog
+            delete e['returnValue'];
+        });
     }
     
     setupMediaSession() {
