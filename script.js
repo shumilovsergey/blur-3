@@ -178,9 +178,6 @@ class BlurPlayer {
             tg.expand();
             tg.disableVerticalSwipes();
             
-            // Prevent Telegram from interfering with audio playback
-            tg.enableClosingConfirmation();
-            
             // Keep app active for background audio
             tg.onEvent('viewportChanged', () => {
                 if (this.isPlaying && this.audio.paused) {
