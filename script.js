@@ -164,6 +164,7 @@ class BlurPlayer {
         this.emailBtn = document.getElementById('email-btn');
         
         this.audio = new Audio();
+        this.audio.preload = 'metadata';
         this.audio.addEventListener('loadedmetadata', () => this.updateDuration());
         this.audio.addEventListener('timeupdate', () => this.updateProgress());
         this.audio.addEventListener('ended', () => this.playNext());
@@ -191,6 +192,14 @@ class BlurPlayer {
     
     setupMediaSession() {
         if ('mediaSession' in navigator) {
+            // First, explicitly disable all seek actions
+            try {
+                navigator.mediaSession.setActionHandler('seekbackward', null);
+                navigator.mediaSession.setActionHandler('seekforward', null);
+                navigator.mediaSession.setActionHandler('seekto', null);
+            } catch (e) {}
+            
+            // Then set up the handlers we want
             navigator.mediaSession.setActionHandler('play', () => {
                 this.play();
             });
@@ -206,11 +215,6 @@ class BlurPlayer {
             navigator.mediaSession.setActionHandler('nexttrack', () => {
                 this.playNext();
             });
-            
-            // Disable seek actions to force track navigation buttons
-            navigator.mediaSession.setActionHandler('seekbackward', null);
-            navigator.mediaSession.setActionHandler('seekforward', null);
-            navigator.mediaSession.setActionHandler('seekto', null);
         }
     }
     
@@ -227,14 +231,28 @@ class BlurPlayer {
             
             navigator.mediaSession.playbackState = this.isPlaying ? 'playing' : 'paused';
             
-            // Ensure only track navigation actions are available
+            // Force iOS to show track navigation by setting position state
             try {
+                navigator.mediaSession.setPositionState({
+                    duration: this.audio.duration || 0,
+                    playbackRate: 1,
+                    position: this.audio.currentTime || 0
+                });
+                
+                // Re-disable seek actions after setting position
                 navigator.mediaSession.setActionHandler('seekbackward', null);
                 navigator.mediaSession.setActionHandler('seekforward', null);
                 navigator.mediaSession.setActionHandler('seekto', null);
+                
+                // Ensure track navigation is available
+                if (!navigator.mediaSession.actionHandlers || !navigator.mediaSession.actionHandlers.has('previoustrack')) {
+                    navigator.mediaSession.setActionHandler('previoustrack', () => this.playPrevious());
+                }
+                if (!navigator.mediaSession.actionHandlers || !navigator.mediaSession.actionHandlers.has('nexttrack')) {
+                    navigator.mediaSession.setActionHandler('nexttrack', () => this.playNext());
+                }
             } catch (error) {
-                // Some browsers may not support removing these actions
-                console.log('Could not disable seek actions:', error);
+                console.log('MediaSession position/action error:', error);
             }
         }
     }
@@ -535,7 +553,35 @@ class BlurPlayer {
         this.currentTime = 0;
         this.updateTimeDisplay();
         this.updateProgress();
+        
+        // Force MediaSession reset for new track
+        this.resetMediaSession();
         this.updateMediaSession();
+    }
+    
+    resetMediaSession() {
+        if ('mediaSession' in navigator) {
+            try {
+                // Clear all action handlers
+                navigator.mediaSession.setActionHandler('play', null);
+                navigator.mediaSession.setActionHandler('pause', null);
+                navigator.mediaSession.setActionHandler('previoustrack', null);
+                navigator.mediaSession.setActionHandler('nexttrack', null);
+                navigator.mediaSession.setActionHandler('seekbackward', null);
+                navigator.mediaSession.setActionHandler('seekforward', null);
+                navigator.mediaSession.setActionHandler('seekto', null);
+                
+                // Reset metadata
+                navigator.mediaSession.metadata = null;
+                
+                // Re-setup after small delay
+                setTimeout(() => {
+                    this.setupMediaSession();
+                }, 100);
+            } catch (error) {
+                console.log('MediaSession reset error:', error);
+            }
+        }
     }
 
     handleAudioError(e) {
@@ -702,6 +748,19 @@ class BlurPlayer {
             this.progressFill.style.width = `${progress}%`;
             this.progressHandle.style.left = `${progress}%`;
             this.updateTimeDisplay();
+            
+            // Update MediaSession position to maintain track navigation
+            if ('mediaSession' in navigator && this.isPlaying) {
+                try {
+                    navigator.mediaSession.setPositionState({
+                        duration: this.audio.duration,
+                        playbackRate: 1,
+                        position: this.audio.currentTime
+                    });
+                } catch (error) {
+                    // Ignore position update errors
+                }
+            }
         }
     }
     
