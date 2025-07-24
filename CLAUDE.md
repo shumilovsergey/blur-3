@@ -4,21 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is **blur-3**, a music player web application that fetches media files from a Yandex S3 bucket and displays them in a Winamp-style interface. The project integrates cloud storage with a retro music player UI.
+This is **blur-3**, a music player web application that fetches media files from a Yandex S3 bucket and displays them in a Winamp-style interface. The project integrates cloud storage with a retro music player UI and is designed as a **Telegram Mini App** with full background audio playback support.
 
 ## Repository Structure
 
 ```
 blur-3/
-├── README.md              # Basic project description
-├── app/                   # Final production application (HTML, CSS, JS)
-├── frontend-maket/        # Winamp-style UI reference implementation
-│   ├── CLAUDE.md         # Detailed UI documentation
-│   ├── index.html        # Player interface template
-│   ├── script.js         # WinampPlayer class (UI logic)
-│   └── styles.css        # Complete Winamp styling
-└── s3-maket/             # S3 integration prototype
-    └── index.html        # S3 file listing and data fetching
+├── CLAUDE.md             # This documentation file
+├── README.md             # Project description and features
+├── index.html            # Main application HTML with Telegram WebApp integration
+├── script.js             # S3MusicLibrary and BlurPlayer classes with background audio
+├── styles.css            # Complete Winamp styling and responsive design
+└── avatart.png          # Application icon/avatar
 ```
 
 ## S3 Bucket Structure
@@ -47,72 +44,79 @@ bucket-root/
 
 This project uses **static HTML/CSS/JS** with no build system. Development workflow:
 
-1. **Test S3 integration**: 
-   ```bash
-   cd s3-maket
-   python3 -m http.server 8000
-   # Test S3 data fetching at http://localhost:8000
-   ```
+**Run the application locally**:
+```bash
+python3 -m http.server 8000
+# Access app at http://localhost:8000
+```
 
-2. **Test UI design**:
-   ```bash
-   cd frontend-maket  
-   python3 -m http.server 8001
-   # Test player interface at http://localhost:8001
-   ```
+**Alternative local servers**:
+```bash
+# Using Node.js
+npx serve .
 
-3. **Run final app**:
-   ```bash
-   cd app
-   python3 -m http.server 8002
-   # Final integrated app at http://localhost:8002
-   ```
+# Using PHP
+php -S localhost:8000
+
+# Using Python 2 (if needed)
+python -m SimpleHTTPServer 8000
+```
 
 ## Architecture
 
-### S3 Integration (s3-maket/)
+### Core Classes
 
-**Data Fetching:**
+**S3MusicLibrary Class** (`script.js`):
 - Uses Yandex S3 XML API for file listing (`/?list-type=2`)
 - Fetches all files recursively with pagination support
 - Filters out folder entries (keys ending with "/")
+- Parses S3 file paths into hierarchical music library structure
 - Base URL: `https://storage.yandexcloud.net/sh-blur-media/`
 
-**API Structure:**
-```javascript
-const BUCKET_NAME = 'sh-blur-media';
-const API_URL = `https://storage.yandexcloud.net/${BUCKET_NAME}/?list-type=2`;
-
-// Recursive fetching with pagination
-async function listAllFiles(marker = "", allKeys = [])
-```
-
-### UI Implementation (frontend-maket/)
-
-**Core Components:**
-- `WinampPlayer` class in `script.js` - Player logic and UI controls
+**BlurPlayer Class** (`script.js`):
+- Player logic and UI controls with Telegram Mini App integration
 - Authentic Winamp-style interface with mobile optimizations
 - 3-level folder navigation: Artist > Album > Songs
 - Artist-scoped playback (songs loop within current artist only)
+- **Background audio support** for Telegram Mini App environment
+
+### Telegram Mini App Integration
 
 **Key Features:**
-- **Touch-optimized controls**: Large buttons and drag-friendly progress bar
-- **Smart folder expansion**: Auto-collapse previous selections when navigating
-- **Authentic Winamp styling**: 90s gradients, LCD green text, inset/outset borders
-- **Mobile-first responsive design**: Portrait orientation optimized
+- Telegram WebApp initialization with `tg.ready()`, `tg.expand()`
+- Background audio playback when app is minimized or phone is locked
+- MediaSession API for lock screen controls (play/pause/previous/next)
+- No closing confirmation popups
+- Viewport change handling to maintain audio playback
 
-**Playback Logic:**
-- Normal mode: Sequential album playback within artist
-- Shuffle mode: Randomizes songs within current artist only
-- Never switches artists automatically - user-controlled navigation
+**Integration Points:**
+```javascript
+// Telegram WebApp setup
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+tg.disableVerticalSwipes();
+tg.disableClosingConfirmation();
 
-### Integration Target (app/)
+// MediaSession for background controls
+navigator.mediaSession.setActionHandler('play', () => player.play());
+navigator.mediaSession.setActionHandler('previoustrack', () => player.playPrevious());
+navigator.mediaSession.setActionHandler('nexttrack', () => player.playNext());
+```
 
-**Final Application Structure:**
-- Combine S3 data fetching from `s3-maket/`
-- Apply Winamp UI from `frontend-maket/`
-- Parse S3 file paths into Artist/Album/Song hierarchy
-- Clean numbered prefixes from display names while preserving order
+### Background Audio Implementation
+
+**MediaSession API:**
+- Lock screen controls with track navigation (⏮️ ⏭️) instead of seek buttons
+- Metadata display (title, artist, album, artwork) on lock screen
+- Position state management for proper iOS behavior
+- Automatic seek action disabling to force track navigation
+
+**Audio Persistence:**
+- Continuous position state updates during playback
+- MediaSession reset/rebuild when loading new tracks
+- Telegram Mini App viewport change handling
+- Browser beforeunload prevention for audio continuation
 
 ## Data Processing Requirements
 
@@ -136,40 +140,85 @@ async function listAllFiles(marker = "", allKeys = [])
 
 ## Code Patterns
 
-**S3 Data Fetching (s3-maket/):**
+**S3 Data Fetching:**
 ```javascript
-// Fetch all files from S3 bucket
-const fileList = await listAllFiles();
-// Parse into hierarchical structure
-const musicLibrary = parseS3FilesToLibrary(fileList);
+// Initialize and load music library
+const library = new S3MusicLibrary();
+const musicLibrary = await library.loadMusicLibrary();
+
+// Access parsed library structure
+library.musicLibrary // Hierarchical artist/album/song structure
+library.allFiles     // Raw S3 file list
 ```
 
-**WinampPlayer Integration:**
-- Adapt existing `WinampPlayer` class to use S3 data
-- Replace static playlist with S3-generated library
-- Maintain existing UI patterns and playback logic
-- Keep artist-scoped navigation behavior
+**Player Integration:**
+```javascript
+// Initialize player with Telegram WebApp and MediaSession
+const player = new BlurPlayer();
+await player.init(); // Loads S3 library and initializes UI/background audio
 
-**CSS Architecture:**
-- Mobile-first responsive design from `frontend-maket/`
-- Authentic Winamp visual elements (gradients, borders, colors)
-- Touch-friendly sizing (48px+ touch targets)
-- SVG icons for scalable controls
+// Background audio methods
+player.setupTelegramWebApp();   // Telegram Mini App integration
+player.setupMediaSession();     // Lock screen controls
+player.updateMediaSession();    // Update metadata and position
+```
+
+**Background Audio Workflow:**
+1. `setupTelegramWebApp()` - Initialize Telegram environment
+2. `setupMediaSession()` - Configure lock screen controls
+3. `updateMediaSession()` - Update track metadata and disable seek actions
+4. `resetMediaSession()` - Reset for new tracks to maintain track navigation
 
 ## Key Constraints
 
 - **No external dependencies**: Pure HTML/CSS/JS implementation
-- **CORS considerations**: S3 bucket must allow cross-origin requests
-- **Mobile-optimized**: Touch controls and responsive layout
+- **Telegram Mini App optimized**: Background audio and proper integration
+- **CORS considerations**: S3 bucket must allow cross-origin requests  
+- **Mobile-optimized**: Touch controls and responsive layout for Telegram environment
 - **Artist-scoped playback**: Never auto-switch between artists
 - **Authentic design**: Maintains classic Winamp aesthetics
+- **Static hosting**: No server-side processing required
 
 ## Working with the Codebase
 
-When developing the final app in `./app/`:
-1. Start with S3 data fetching logic from `s3-maket/`
-2. Copy Winamp UI components from `frontend-maket/`
-3. Integrate S3 data parsing with UI playlist structure
-4. Test S3 connectivity and file playback
-5. Ensure mobile usability and authentic Winamp styling
-6. Preserve artist-scoped playback behavior
+**Main Application Files:**
+- `index.html` - Complete UI structure with Telegram WebApp script inclusion
+- `script.js` - Contains S3MusicLibrary and BlurPlayer classes with full background audio
+- `styles.css` - Complete Winamp styling with mobile optimizations
+
+**Development Workflow:**
+1. Test locally using `python3 -m http.server 8000`
+2. Check S3 connectivity and file parsing in browser console
+3. Test Telegram Mini App integration (background audio, lock screen controls)
+4. Verify mobile responsiveness and touch controls
+5. Test playback functionality across different audio formats
+6. Ensure proper artist/album/song hierarchy parsing
+7. Validate Winamp aesthetic elements and animations
+
+**Common Tasks:**
+- **Adding new S3 features**: Modify `S3MusicLibrary` class methods
+- **UI improvements**: Update HTML structure and CSS styling
+- **Player features**: Extend `BlurPlayer` class functionality
+- **Background audio**: Modify MediaSession and Telegram WebApp integration
+- **Mobile optimization**: Test touch interactions and viewport scaling
+
+**Background Audio Troubleshooting:**
+- Check MediaSession API support in browser console
+- Verify Telegram WebApp script is loaded (`window.Telegram.WebApp`)
+- Test lock screen controls appear as track navigation (not seek buttons)
+- Ensure audio continues when app is minimized or phone is locked
+- Verify no closing confirmation popups appear when exiting Telegram
+
+## Telegram Mini App Deployment
+
+**Requirements:**
+- Telegram WebApp script: `https://telegram.org/js/telegram-web-app.js`
+- HTTPS hosting for production
+- Proper CORS configuration for S3 bucket
+- Mobile-optimized viewport and touch handling
+
+**Testing:**
+- Local development with `python3 -m http.server`
+- Telegram Web version for initial testing
+- Mobile Telegram app for full background audio testing
+- Lock screen control verification on iOS/Android

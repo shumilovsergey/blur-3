@@ -694,11 +694,11 @@ class BlurPlayer {
     }
     
     openWebsite() {
-        window.open('https://your-website.com', '_blank');
+        window.open('https://sh-development.ru', '_blank');
     }
     
     openTelegram() {
-        window.open('https://sh-development.ru', '_blank');
+        window.open('https://t.me/sergey_showmelove', '_blank');
     }
     
     async copyEmail() {
